@@ -217,7 +217,7 @@
                     @endif
                     
                     <form action="{{ route('admin.complaints.delete', $complaint->id) }}" method="POST" 
-                          onsubmit="return confirm('Yakin ingin menghapus keluhan ini?')">
+                          data-confirm="Keluhan ini akan dihapus. Tindakan ini tidak dapat dibatalkan." data-confirm-title="Hapus keluhan ini?" data-confirm-label="Ya, hapus keluhan" data-confirm-tone="danger">
                         @csrf
                         @method('DELETE')
                         <button type="submit" class="btn btn-outline-danger w-100">

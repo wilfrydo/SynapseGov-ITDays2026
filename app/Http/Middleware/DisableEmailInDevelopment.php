@@ -4,7 +4,6 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Mail;
 use Symfony\Component\HttpFoundation\Response;
 
 class DisableEmailInDevelopment
@@ -14,9 +13,9 @@ class DisableEmailInDevelopment
      */
     public function handle(Request $request, Closure $next): Response
     {
-        // Disable email in development environment
+        // Do not discard password reset messages in development.
         if (app()->environment('local', 'development')) {
-            Mail::fake();
+            config(['mail.default' => 'log']);
         }
 
         return $next($request);

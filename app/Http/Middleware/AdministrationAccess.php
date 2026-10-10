@@ -23,6 +23,14 @@ class AdministrationAccess
             abort(403, 'Akses ditolak. Halaman ini khusus petugas dinas dan admin.');
         }
 
+        if (! $user->isAdmin() && ! $user->department_id) {
+            if (! $request->isMethod('GET') || $request->expectsJson()) {
+                abort(403, 'Akun Anda belum terhubung dengan departemen. Hubungi administrator.');
+            }
+
+            return redirect()->route('profile.show')->with('error', 'Akun Anda belum terhubung dengan departemen. Hubungi administrator.');
+        }
+
         return $next($request);
     }
 }

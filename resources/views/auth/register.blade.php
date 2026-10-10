@@ -444,8 +444,8 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="phone" class="form-label">Username / No. HP</label>
-                    <input id="phone" type="text" class="form-control @error('phone') is-invalid @enderror" name="phone" value="{{ old('phone') }}" placeholder="Username / No. HP">
+                    <label for="phone" class="form-label">Nomor HP</label>
+                    <input id="phone" type="tel" maxlength="20" class="form-control @error('phone') is-invalid @enderror" name="phone" value="{{ old('phone') }}" placeholder="Nomor HP">
                     @error('phone')
                         <span class="invalid-feedback">{{ $message }}</span>
                     @enderror
@@ -461,7 +461,7 @@
 
                 <div class="form-group">
                     <label for="id_number" class="form-label">Nomor Induk Kependudukan (NIK) <span class="text-danger">*</span></label>
-                    <input id="id_number" type="text" class="form-control @error('id_number') is-invalid @enderror" name="id_number" value="{{ old('id_number') }}" required placeholder="NIK KTP (16 Digit) *">
+                    <input id="id_number" type="text" inputmode="numeric" pattern="[0-9]{16}" maxlength="16" class="form-control @error('id_number') is-invalid @enderror" name="id_number" value="{{ old('id_number') }}" required placeholder="NIK KTP (16 Digit) *">
                     @error('id_number')
                         <span class="invalid-feedback">{{ $message }}</span>
                     @enderror
@@ -511,9 +511,12 @@
 
             <div class="form-group">
                 <label class="checkbox-wrap">
-                    <input type="checkbox" id="terms-checkbox" name="terms" required>
+                    <input type="checkbox" id="terms-checkbox" name="terms" required @checked(old('terms'))>
                     <span>Saya menyetujui <a href="#" onclick="openTermsModal(event)">Syarat & Ketentuan</a>.</span>
                 </label>
+                @error('terms')
+                    <div class="text-danger" role="alert">{{ $message }}</div>
+                @enderror
             </div>
 
             <button type="submit" class="btn-submit">

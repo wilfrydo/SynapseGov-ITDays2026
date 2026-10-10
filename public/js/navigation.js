@@ -40,7 +40,7 @@
         });
         document.addEventListener('keydown', event => {
             if (!open) return;
-            if (document.querySelector('.modal.show, .dropdown-menu.show')) return;
+            if (document.querySelector('dialog[open], .modal.show, .dropdown-menu.show')) return;
             if (event.key === 'Escape') { event.preventDefault(); setOpen(false, true); }
             if (event.key === 'Tab' && mobile.matches) {
                 const controls = [...panel.querySelectorAll('a[href],button:not([disabled])')].filter(el => el.getClientRects().length);

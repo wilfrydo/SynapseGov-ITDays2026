@@ -85,7 +85,7 @@
                                         <li><a class="dropdown-item rounded-3 py-2" href="{{ route('admin.reports.edit', $report->id) }}"><i class="fas fa-edit text-warning text-dark opacity-75 me-2"></i> Edit Laporan</a></li>
                                         <li><hr class="dropdown-divider"></li>
                                         <li>
-                                            <form action="{{ route('admin.reports.delete', $report->id) }}" method="POST" onsubmit="return confirm('Yakin ingin menghapus laporan ini? Tindakan ini tidak dapat dibatalkan.')">
+                                            <form action="{{ route('admin.reports.delete', $report->id) }}" method="POST" data-confirm="Laporan ini akan dihapus. Tindakan ini tidak dapat dibatalkan." data-confirm-title="Hapus laporan ini?" data-confirm-label="Ya, hapus laporan" data-confirm-tone="danger">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit" class="dropdown-item rounded-3 py-2 text-danger"><i class="fas fa-trash text-danger opacity-75 me-2"></i> Hapus</button>
@@ -321,4 +321,3 @@
     }
 </style>
 @endsection
-

@@ -23,7 +23,7 @@ class AdministrationDashboardController extends Controller
         $department = $user->department;
 
         if (! $department) {
-            return redirect()->route('home')->with('error', 'Akun Anda belum terhubung dengan departemen manapun.');
+            return redirect()->route('profile.show')->with('error', 'Akun Anda belum terhubung dengan departemen manapun. Hubungi administrator.');
         }
 
         $today = now()->toDateString(); // dikirim sebagai binding agar portabel SQLite/MySQL
@@ -38,7 +38,7 @@ class AdministrationDashboardController extends Controller
                     COALESCE(SUM(CASE WHEN status = 'resolved' THEN 1 ELSE 0 END), 0) as resolved_reports,
                     COALESCE(SUM(CASE WHEN DATE(created_at) = ? THEN 1 ELSE 0 END), 0) as today_reports,
                     COALESCE(SUM(CASE WHEN DATE(resolved_at) = ? THEN 1 ELSE 0 END), 0) as completed_today,
-                    COALESCE(SUM(CASE WHEN status IN ('submitted', 'pending', 'verified') THEN 1 ELSE 0 END), 0) as pending_action
+                    COALESCE(SUM(CASE WHEN status IN ('assigned', 'reviewed', 'needs_revision') THEN 1 ELSE 0 END), 0) as pending_action
                 ", [$today, $today])->first();
 
             $compStat = Complaint::where('department_id', $department->id)
@@ -58,7 +58,7 @@ class AdministrationDashboardController extends Controller
                     COALESCE(SUM(CASE WHEN status = 'resolved' THEN 1 ELSE 0 END), 0) as resolved_reports,
                     COALESCE(SUM(CASE WHEN DATE(created_at) = ? THEN 1 ELSE 0 END), 0) as today_reports,
                     COALESCE(SUM(CASE WHEN DATE(resolved_at) = ? THEN 1 ELSE 0 END), 0) as completed_today,
-                    COALESCE(SUM(CASE WHEN status IN ('submitted', 'pending', 'verified') THEN 1 ELSE 0 END), 0) as pending_action
+                    COALESCE(SUM(CASE WHEN status IN ('assigned', 'reviewed', 'needs_revision') THEN 1 ELSE 0 END), 0) as pending_action
                 ", [$today, $today])->first();
 
             $compStat = Complaint::where('assigned_to', $user->id)
@@ -129,6 +129,11 @@ class AdministrationDashboardController extends Controller
 
     public function reports(Request $request)
     {
+        $request->validate([
+            'q' => 'nullable|string|max:150',
+            'status' => ['nullable', \Illuminate\Validation\Rule::in(array_keys(Report::STATUS_LABELS))],
+            'priority' => 'nullable|in:low,medium,high,urgent',
+        ]);
         if (Auth::user()->isDepartmentHead()) {
             return app(DepartmentHeadWorkspaceController::class)->tickets($request, 'reports');
         }
@@ -174,7 +179,7 @@ class AdministrationDashboardController extends Controller
         // Ambil daftar staff untuk assignment dropdown
         $staffList = User::where('department_id', $user->department_id)
             ->where('role', 'staff')
-            ->where('id', '!=', $user->id)
+            ->where('is_active', true)
             ->get();
 
         return view('administration.reports', compact('reports', 'staffList'));
@@ -182,6 +187,11 @@ class AdministrationDashboardController extends Controller
 
     public function complaints(Request $request)
     {
+        $request->validate([
+            'q' => 'nullable|string|max:150',
+            'status' => ['nullable', \Illuminate\Validation\Rule::in(array_keys(Report::STATUS_LABELS))],
+            'priority' => 'nullable|in:low,medium,high,urgent',
+        ]);
         if (Auth::user()->isDepartmentHead()) {
             return app(DepartmentHeadWorkspaceController::class)->tickets($request, 'complaints');
         }
@@ -249,7 +259,7 @@ class AdministrationDashboardController extends Controller
                 'required',
                 'exists:users,id',
                 \Illuminate\Validation\Rule::exists('users', 'id')->where(function ($query) use ($user) {
-                    $query->where('department_id', $user->department_id)->where('is_active', true);
+                    $query->where('department_id', $user->department_id)->where('is_active', true)->where('role', 'staff');
                 }),
             ],
             'notes' => 'nullable|string|max:1000',
@@ -262,6 +272,10 @@ class AdministrationDashboardController extends Controller
             })->lockForUpdate()->findOrFail($id);
 
             $assignedTo = User::findOrFail($request->assigned_to);
+
+            if ($user->isStaff() && (int) $report->assigned_to !== (int) $user->id) {
+                abort(403, 'Hanya kepala dinas atau petugas yang ditugaskan yang dapat mengalihkan laporan.');
+            }
 
             $workflowService = app(\App\Services\WorkflowService::class);
             $workflowService->assignReport($report, $assignedTo, $user, $request->notes);
@@ -282,7 +296,7 @@ class AdministrationDashboardController extends Controller
                 'required',
                 'exists:users,id',
                 \Illuminate\Validation\Rule::exists('users', 'id')->where(function ($query) use ($user) {
-                    $query->where('department_id', $user->department_id)->where('is_active', true);
+                    $query->where('department_id', $user->department_id)->where('is_active', true)->where('role', 'staff');
                 }),
             ],
             'notes' => 'nullable|string|max:1000',
@@ -292,6 +306,14 @@ class AdministrationDashboardController extends Controller
             $complaint = Complaint::where('department_id', $user->department_id)->lockForUpdate()->findOrFail($id);
 
             $assignedTo = User::findOrFail($request->assigned_to);
+
+            if (! in_array('investigating', $complaint->allowedStatuses(), true)) {
+                return back()->with('error', 'Keluhan dengan status ini tidak dapat ditugaskan.');
+            }
+            if ($user->isStaff() && (int) $complaint->assigned_to !== (int) $user->id
+                && ($complaint->assigned_to || (int) $assignedTo->id !== (int) $user->id)) {
+                abort(403, 'Anda hanya dapat mengambil keluhan yang belum ditugaskan untuk diri sendiri.');
+            }
 
             \App\Models\Assignment::where('assignable_type', Complaint::class)
                 ->where('assignable_id', $complaint->id)
@@ -383,6 +405,10 @@ class AdministrationDashboardController extends Controller
     public function confirmToAdmin($id)
     {
         $user = Auth::user();
+        // Keep the legacy endpoint subject to the same validation and ownership checks as the staff form.
+        if ($user->isStaff()) {
+            return app(WorkflowManagementController::class)->staffConfirmToAdmin(request(), $id);
+        }
         if (! in_array($user->role, ['staff', 'department_head'])) {
             return back()->with('error', 'Hanya staff atau Kepala Departemen yang berhak mengonfirmasi laporan ini ke admin.');
         }
@@ -402,6 +428,8 @@ class AdministrationDashboardController extends Controller
             if (! in_array($report->status, $allowedStatuses)) {
                 return back()->with('error', 'Laporan dengan status "'.$report->status.'" tidak dapat dikonfirmasi ke admin.');
             }
+
+            request()->validate(['completion_notes' => 'nullable|string|max:1000']);
 
             app(\App\Services\WorkflowService::class)
                 ->submitForApproval($report, $user, request('completion_notes', $report->completion_notes));
@@ -426,6 +454,10 @@ class AdministrationDashboardController extends Controller
 
         return DB::transaction(function () use ($id, $request, $user) {
             $complaint = Complaint::where('department_id', $user->department_id)->lockForUpdate()->findOrFail($id);
+
+            if ($user->isStaff() && (int) $complaint->assigned_to !== (int) $user->id) {
+                abort(403, 'Hanya petugas yang ditugaskan yang dapat menyelesaikan keluhan ini.');
+            }
 
             // Only a complaint that is being handled can be closed out (see Complaint::STATUS_TRANSITIONS)
             if (! $complaint->canBeResolved()) {

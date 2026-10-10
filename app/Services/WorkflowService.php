@@ -13,6 +13,7 @@ use App\Models\Report;
 use App\Models\User;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class WorkflowService
 {
@@ -35,6 +36,7 @@ class WorkflowService
 
             // Auto-assign to least loaded admin without overriding 'submitted' status
             $adminUser = User::where('role', 'admin')
+                ->where('is_active', true)
                 ->withCount(['assignments' => function ($q) {
                     $q->where('status', 'active');
                 }])
@@ -166,6 +168,7 @@ class WorkflowService
     public function assignReport(Report $report, User $assignedTo, User $assignedBy, ?string $notes = null, string $status = 'assigned'): Assignment
     {
         return DB::transaction(function () use ($report, $assignedTo, $assignedBy, $notes, $status) {
+            $assignedTo = User::findOrFail($assignedTo->id);
             // Lock the report row to prevent race conditions during concurrent assignments
             $lockedReport = Report::where('id', $report->id)->lockForUpdate()->first() ?? $report;
 
@@ -173,6 +176,15 @@ class WorkflowService
             $oldData = $lockedReport->toArray();
 
             // Check if there was any prior assignment to avoid incrementing reassign_count on first assignment
+            if (! $assignedTo->is_active || ! in_array($assignedTo->role, ['staff', 'department_head'], true)
+                || ! $lockedReport->department_id || (int) $assignedTo->department_id !== (int) $lockedReport->department_id) {
+                throw ValidationException::withMessages(['assigned_to' => 'Pilih petugas aktif dari departemen laporan.']);
+            }
+
+            if ($status !== $oldStatus && ! in_array($status, Report::STATUS_TRANSITIONS[$oldStatus] ?? [], true)) {
+                throw ValidationException::withMessages(['status' => 'Laporan dengan status ini tidak dapat ditugaskan.']);
+            }
+
             $hadPriorAssignment = $lockedReport->assignments()->exists() || ! empty($lockedReport->assigned_to);
 
             // Deactivate any prior active assignments for this report

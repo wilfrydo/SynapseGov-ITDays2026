@@ -40,7 +40,7 @@ class ProfileController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
-            'phone' => 'nullable|string|max:20',
+            'phone' => ['nullable', 'string', 'max:20', 'regex:/^\+?[0-9][0-9 ()-]{6,19}$/'],
             'address' => 'nullable|string|max:500',
             'birth_date' => 'nullable|date|before:today',
             'gender' => 'nullable|in:male,female',
@@ -58,7 +58,7 @@ class ProfileController extends Controller
             ]);
 
             if (! Hash::check($request->current_password, $user->password)) {
-                return back()->withInput()->withErrors([
+                return back()->withInput($request->except(['current_password', 'password', 'password_confirmation']))->withErrors([
                     'current_password' => 'Password saat ini salah. Perubahan email dibatalkan.',
                 ]);
             }

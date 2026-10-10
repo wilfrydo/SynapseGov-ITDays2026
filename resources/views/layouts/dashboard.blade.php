@@ -1361,6 +1361,7 @@
         }
     </style>
 @if(auth()->check() && auth()->user()->isAdmin())<link rel="stylesheet" href="{{ asset('css/admin-workspace.css') }}?v={{ filemtime(public_path('css/admin-workspace.css')) }}">@endif
+    <link rel="stylesheet" href="{{ asset('css/confirmation.css') }}?v={{ filemtime(public_path('css/confirmation.css')) }}">
 </head>
 <body class="workspace-ui {{ auth()->check() && auth()->user()->isAdmin() ? 'admin-ui' : '' }} {{ auth()->check() && auth()->user()->isDepartmentHead() ? 'department-head' : '' }}">
     <div id="app">
@@ -1483,7 +1484,7 @@
             <!-- Main Content Stage -->
             <main class="content">
                 @if(session('success'))
-                    <div class="alert alert-success alert-dismissible fade show d-flex align-items-center" role="alert">
+                    <div class="alert alert-success alert-dismissible fade show d-flex align-items-center" role="alert" data-auto-dismiss>
                         <i class="fas fa-circle-check fs-5 me-2"></i>
                         <div class="flex-grow-1">{{ session('success') }}</div>
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
@@ -1510,9 +1511,9 @@
 
     <!-- Theme & Interactivity Script -->
     <script>
-        // Auto dismiss flash alerts after 5 seconds
+        // Only dismiss success flashes; keep validation errors and workflow instructions visible.
         setTimeout(function() {
-            document.querySelectorAll('.alert').forEach(function(alert) {
+            document.querySelectorAll('[data-auto-dismiss]').forEach(function(alert) {
                 const bsAlert = new bootstrap.Alert(alert);
                 bsAlert.close();
             });
@@ -1584,10 +1585,11 @@
             }
         });
     </script>
+    @include('components.confirmation-dialog')
+    <script src="{{ asset('js/confirmation.js') }}?v={{ filemtime(public_path('js/confirmation.js')) }}" defer></script>
     <script src="{{ asset('js/navigation.js') }}?v={{ filemtime(public_path('js/navigation.js')) }}" defer></script>
     @stack('modals')
     @yield('scripts')
     @stack('scripts')
 </body>
 </html>
-

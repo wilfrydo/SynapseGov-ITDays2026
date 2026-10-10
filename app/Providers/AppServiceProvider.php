@@ -2,7 +2,6 @@
 
 namespace App\Providers;
 
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -20,9 +19,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Disable email notifications in development
+        // Keep development email local, while preserving reset links for testing.
         if (app()->environment('local', 'development')) {
-            Mail::fake();
+            config(['mail.default' => 'log']);
         }
     }
 }

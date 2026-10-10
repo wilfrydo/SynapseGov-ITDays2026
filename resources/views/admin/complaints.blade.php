@@ -66,7 +66,7 @@
                                         <a href="{{ route('admin.complaints.edit', $complaint->id) }}" class="btn btn-sm btn-outline-warning" title="Edit">
                                             <i class="fas fa-edit"></i>
                                         </a>
-                                        <form action="{{ route('admin.complaints.delete', $complaint->id) }}" method="POST" style="display:inline-block;" onsubmit="return confirm('Yakin ingin menghapus keluhan ini?')">
+                                        <form action="{{ route('admin.complaints.delete', $complaint->id) }}" method="POST" style="display:inline-block;" data-confirm="Keluhan ini akan dihapus. Tindakan ini tidak dapat dibatalkan." data-confirm-title="Hapus keluhan ini?" data-confirm-label="Ya, hapus keluhan" data-confirm-tone="danger">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="btn btn-sm btn-outline-danger" title="Hapus">
@@ -167,7 +167,7 @@
                         <label for="assigned_to_{{ $complaint->id }}" class="form-label">Pilih Staff</label>
                         <select class="form-select" id="assigned_to_{{ $complaint->id }}" name="assigned_to" required>
                             <option value="">-- Pilih Staff --</option>
-                            @foreach(\App\Models\User::where('role', 'staff')->where('is_active', true)->get() as $staff)
+                            @foreach(\App\Models\User::where('role', 'staff')->where('is_active', true)->where('department_id', $complaint->department_id)->get() as $staff)
                                 <option value="{{ $staff->id }}">{{ $staff->name }} ({{ $staff->email }})</option>
                             @endforeach
                         </select>
@@ -183,4 +183,3 @@
 </div>
 @endforeach
 @endsection
-

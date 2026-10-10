@@ -430,7 +430,7 @@
         </form>
 
         @if($user->avatar)
-        <form id="deleteAvatarForm" action="{{ route('profile.avatar.delete') }}" method="POST" class="d-none">
+        <form id="deleteAvatarForm" action="{{ route('profile.avatar.delete') }}" method="POST" class="d-none" data-confirm="Foto profil Anda akan dihapus dan diganti dengan avatar bawaan. Anda dapat mengunggah foto baru kapan saja." data-confirm-title="Hapus foto profil?" data-confirm-label="Ya, hapus foto" data-confirm-tone="danger">
             @csrf
             @method('DELETE')
         </form>
@@ -503,9 +503,7 @@
     if(delBtn && delForm){
         delBtn.addEventListener('click', (e)=>{
             e.stopPropagation();
-            if(confirm('Apakah Anda yakin ingin menghapus foto profil?')) {
-                delForm.submit();
-            }
+            delForm.requestSubmit();
         });
     }
 })();

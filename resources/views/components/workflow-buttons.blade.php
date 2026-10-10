@@ -30,7 +30,7 @@
                         <li>
                             <form action="{{ route('workflow.reports.verify', $report->id) }}" method="POST">
                                 @csrf
-                                <button type="submit" class="dropdown-item py-2 text-success" onclick="return confirm('Apakah Anda yakin laporan ini layak dan akan diverifikasi?')">
+                                <button type="submit" class="dropdown-item py-2 text-success" data-confirm="Laporan akan ditandai layak dan siap untuk ditugaskan. Pastikan informasi laporan sudah diperiksa." data-confirm-title="Verifikasi laporan ini?" data-confirm-label="Ya, verifikasi">
                                     <i class="fas fa-check w-20px me-2"></i> Verifikasi (Layak)
                                 </button>
                             </form>
@@ -163,7 +163,7 @@
                         <li>
                             <form action="{{ route('administration.reports.confirm_to_admin', $report->id) }}" method="POST">
                                 @csrf
-                                <button type="submit" class="dropdown-item py-2 text-success" onclick="return confirm('Konfirmasi dan rekomendasikan penyelesaian laporan ini ke Admin Utama?')">
+                                <button type="submit" class="dropdown-item py-2 text-success" data-confirm="Hasil penanganan akan direkomendasikan kepada Admin Utama untuk persetujuan akhir." data-confirm-title="Rekomendasikan penyelesaian?" data-confirm-label="Ya, rekomendasikan">
                                     <i class="fas fa-check-circle w-20px me-2"></i> Rekomendasikan ke Admin
                                 </button>
                             </form>
@@ -186,7 +186,7 @@
                 @if(in_array($report->status, ['submitted', 'pending', 'awaiting_info']))
                     <form action="{{ route('workflow.reports.verify', $report->id) }}" method="POST" class="d-inline">
                         @csrf
-                        <button type="submit" class="btn btn-success btn-sm shadow-sm" onclick="return confirm('Apakah Anda yakin laporan ini layak dan akan diverifikasi?')">
+                        <button type="submit" class="btn btn-success btn-sm shadow-sm" data-confirm="Laporan akan ditandai layak dan siap untuk ditugaskan. Pastikan informasi laporan sudah diperiksa." data-confirm-title="Verifikasi laporan ini?" data-confirm-label="Ya, verifikasi">
                             <i class="fas fa-check me-1"></i> Verifikasi (Layak)
                         </button>
                     </form>
@@ -276,7 +276,7 @@
                 @elseif($canHeadAct && $report->status === 'awaiting_admin_approval')
                     <form action="{{ route('administration.reports.confirm_to_admin', $report->id) }}" method="POST" class="d-inline">
                         @csrf
-                        <button type="submit" class="btn btn-success btn-sm shadow-sm" onclick="return confirm('Konfirmasi dan rekomendasikan laporan ini ke Admin Utama?')">
+                        <button type="submit" class="btn btn-success btn-sm shadow-sm" data-confirm="Hasil penanganan akan direkomendasikan kepada Admin Utama untuk persetujuan akhir." data-confirm-title="Rekomendasikan penyelesaian?" data-confirm-label="Ya, rekomendasikan">
                             <i class="fas fa-check-circle me-1"></i> Rekomendasikan ke Admin
                         </button>
                     </form>

@@ -143,7 +143,7 @@
                     @endif
                 </div>
                 
-                @if(in_array($ticket->status, ['submitted','pending']))
+                @if(in_array($ticket->status, ['submitted','pending']) && (!$ticket->assigned_to || (int) $ticket->assigned_to === (int) auth()->id()))
                 <form class="dh-action-box" action="{{ route('administration.complaints.assign', $ticket->id) }}" method="POST">
                     @csrf
                     <h3 class="fs-6">Tugaskan kepada staf</h3>
@@ -151,13 +151,24 @@
                     <select class="form-select mb-3" name="assigned_to" id="complaintStaff{{ $ticket->id }}" required>
                         <option value="">Pilih staf aktif</option>
                         @foreach($staffList as $member)
+                            @if($ticket->assigned_to || (int) $member->id === (int) auth()->id())
                             <option value="{{ $member->id }}">{{ $member->name }}</option>
+                            @endif
                         @endforeach
                     </select>
                     @if($staffList->isEmpty())
                         <p class="dh-muted">Belum ada staf aktif. Hubungi administrator untuk menambahkan staf.</p>
                     @endif
                     <button class="dh-button" @disabled($staffList->isEmpty())>Simpan penugasan</button>
+                </form>
+                @endif
+                @if($ticket->canBeResolved() && (int) $ticket->assigned_to === (int) auth()->id())
+                <form class="dh-action-box" action="{{ route('administration.complaints.resolve', $ticket->id) }}" method="POST">
+                    @csrf
+                    <h3 class="fs-6">Selesaikan keluhan</h3>
+                    <label for="complaintResolution{{ $ticket->id }}" class="form-label">Catatan hasil penanganan</label>
+                    <textarea class="form-control mb-3" id="complaintResolution{{ $ticket->id }}" name="resolution_notes" rows="3" maxlength="1000" required>{{ old('resolution_notes') }}</textarea>
+                    <button class="dh-button" type="submit">Selesaikan Keluhan</button>
                 </form>
                 @endif
             </div>

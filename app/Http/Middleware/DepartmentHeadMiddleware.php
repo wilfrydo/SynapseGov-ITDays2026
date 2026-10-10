@@ -23,6 +23,6 @@ class DepartmentHeadMiddleware
             abort(403, 'Akses ditolak. Halaman ini khusus kepala dinas.');
         }
 
-        return $next($request);
+        return app(AdministrationAccess::class)->handle($request, $next);
     }
 }

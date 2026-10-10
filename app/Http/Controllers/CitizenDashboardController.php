@@ -23,8 +23,8 @@ class CitizenDashboardController extends Controller
             ->selectRaw("
                 COUNT(*) as my_reports,
                 COALESCE(SUM(CASE WHEN status IN ('submitted', 'pending', 'verified') THEN 1 ELSE 0 END), 0) as pending_reports,
-                COALESCE(SUM(CASE WHEN status = 'in_progress' THEN 1 ELSE 0 END), 0) as in_progress_reports,
-                COALESCE(SUM(CASE WHEN status = 'resolved' THEN 1 ELSE 0 END), 0) as resolved_reports
+                COALESCE(SUM(CASE WHEN status IN ('assigned', 'in_progress', 'reviewed', 'needs_revision', 'awaiting_admin_approval', 'awaiting_info') THEN 1 ELSE 0 END), 0) as in_progress_reports,
+                COALESCE(SUM(CASE WHEN status IN ('resolved', 'closed') THEN 1 ELSE 0 END), 0) as resolved_reports
             ")->first();
 
         $compStat = Complaint::where('user_id', $user->id)
@@ -89,7 +89,7 @@ class CitizenDashboardController extends Controller
         $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'required|string',
-            'category' => 'required|string',
+            'category' => 'required|string|max:100',
             'department_id' => ['required', Rule::exists('departments', 'id')->where('is_active', true)],
             'location' => 'nullable|string|max:255',
             'priority' => 'required|in:low,medium,high,urgent',
@@ -131,7 +131,7 @@ class CitizenDashboardController extends Controller
         $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'required|string',
-            'category' => 'required|string',
+            'category' => 'required|string|max:100',
             'department_id' => ['required', Rule::exists('departments', 'id')->where('is_active', true)],
             'location' => 'nullable|string|max:255',
             'priority' => 'required|in:low,medium,high,urgent',
@@ -160,7 +160,7 @@ class CitizenDashboardController extends Controller
         ]);
 
         // Auto-assign complaint to first admin so it directly enters admin queue
-        $firstAdmin = User::where('role', 'admin')->orderBy('id')->first();
+        $firstAdmin = User::where('role', 'admin')->where('is_active', true)->orderBy('id')->first();
         if ($firstAdmin) {
             // Save assignment record for audit trail consistency
             Assignment::create([

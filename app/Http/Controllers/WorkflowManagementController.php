@@ -85,6 +85,7 @@ class WorkflowManagementController extends Controller
             }
 
             $head = User::where('role', 'department_head')
+                ->where('is_active', true)
                 ->where('department_id', $report->department_id)
                 ->first();
 
@@ -141,6 +142,7 @@ class WorkflowManagementController extends Controller
             // Then forward to head
             $targetDeptId = $report->department_id ?: $user->department_id;
             $head = User::where('role', 'department_head')
+                ->where('is_active', true)
                 ->where('department_id', $targetDeptId)
                 ->first();
 

@@ -23,6 +23,6 @@ class StaffMiddleware
             abort(403, 'Akses ditolak. Halaman ini khusus staf lapangan.');
         }
 
-        return $next($request);
+        return app(AdministrationAccess::class)->handle($request, $next);
     }
 }

@@ -14,10 +14,12 @@
                         <select class="form-select" id="assigned_to{{ $report->id }}" name="assigned_to" required>
                             <option value="">-- Pilih Staff --</option>
                             @php 
-                                // Get all staff directly
+                                // Match server assignment rules, including when a list was supplied by the page.
                                 $allStaff = $staffList ?? \App\Models\User::where('role', 'staff')->where('is_active', true)
                                     ->when(auth()->user()->isDepartmentHead(), fn ($query) => $query->where('department_id', auth()->user()->department_id))
                                     ->with('department')->get();
+                                $allStaff = $allStaff->where('role', 'staff')->where('is_active', true)
+                                    ->filter(fn ($staff) => $report->department_id && (int) $staff->department_id === (int) $report->department_id);
                             @endphp
                             
                             @if($allStaff->count() > 0)

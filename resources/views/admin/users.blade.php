@@ -90,7 +90,7 @@
                                 @endif
                                 @if($user->id !== auth()->id())
                                     <form action="{{ route('admin.users.toggle_status', $user->id) }}" method="POST" style="margin-top: 0.4rem;"
-                                          onsubmit="return confirm('{{ $user->is_active ? 'Nonaktifkan akun ini? Pengguna tidak akan bisa login.' : 'Aktifkan kembali akun ini?' }}')">
+                                          data-confirm="{{ $user->is_active ? 'Akun '.$user->name.' akan dinonaktifkan. Pengguna tidak akan bisa login sampai akun diaktifkan kembali.' : 'Akun '.$user->name.' akan diaktifkan kembali dan dapat digunakan untuk login.' }}" data-confirm-title="{{ $user->is_active ? 'Nonaktifkan akun ini?' : 'Aktifkan kembali akun ini?' }}" data-confirm-label="{{ $user->is_active ? 'Ya, nonaktifkan' : 'Ya, aktifkan' }}" data-confirm-tone="{{ $user->is_active ? 'danger' : 'success' }}">
                                         @csrf
                                         <button type="submit" style="background: none; border: none; padding: 0; font-size: 0.8rem; font-weight: 600; cursor: pointer; color: {{ $user->is_active ? '#ef4444' : '#10b981' }};">
                                             {{ $user->is_active ? 'Nonaktifkan' : 'Aktifkan' }}
@@ -204,4 +204,3 @@
 </div>
 @endforeach
 @endsection
-

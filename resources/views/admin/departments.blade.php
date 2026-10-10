@@ -106,7 +106,7 @@
                                 <button type="button" class="btn btn-sm btn-light text-warning border shadow-sm btn-hover-elevate rounded-circle" data-bs-toggle="modal" data-bs-target="#editDepartmentModal{{ $department->id }}" title="Edit" style="width: 32px; height: 32px;">
                                     <i class="fas fa-edit opacity-75 text-dark"></i>
                                 </button>
-                                <form action="{{ route('admin.departments.destroy', $department->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus departemen {{ $department->name }}?');">
+                                <form action="{{ route('admin.departments.destroy', $department->id) }}" method="POST" class="d-inline" data-confirm="Departemen {{ $department->name }} akan dihapus. Pastikan departemen ini sudah tidak digunakan." data-confirm-title="Hapus departemen ini?" data-confirm-label="Ya, hapus departemen" data-confirm-tone="danger">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="btn btn-sm btn-light text-danger border shadow-sm btn-hover-elevate rounded-circle" title="Hapus" style="width: 32px; height: 32px;">
@@ -341,4 +341,3 @@
 </div>
 @endforeach
 @endsection
-

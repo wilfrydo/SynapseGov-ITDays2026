@@ -222,7 +222,7 @@
                     @endif
                     
                     <form action="{{ route('admin.reports.delete', $report->id) }}" method="POST" 
-                          onsubmit="return confirm('Yakin ingin menghapus laporan ini?')">
+                          data-confirm="Laporan ini akan dihapus. Tindakan ini tidak dapat dibatalkan." data-confirm-title="Hapus laporan ini?" data-confirm-label="Ya, hapus laporan" data-confirm-tone="danger">
                         @csrf
                         @method('DELETE')
                         <button type="submit" class="btn btn-outline-danger w-100">

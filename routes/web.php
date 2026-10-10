@@ -82,7 +82,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/reports/{id}/download', [App\Http\Controllers\AdministrationDashboardController::class, 'downloadReport'])->name('reports.download');
         Route::get('/complaints', [App\Http\Controllers\AdministrationDashboardController::class, 'complaints'])->name('complaints');
         Route::get('/staff', [App\Http\Controllers\AdministrationDashboardController::class, 'staff'])->name('staff');
-        Route::post('/reports/{id}/confirm-to-admin', [App\Http\Controllers\AdministrationDashboardController::class, 'confirmToAdmin'])->name('reports.confirm_to_admin');
+        Route::post('/reports/{id}/confirm-to-admin', [App\Http\Controllers\AdministrationDashboardController::class, 'confirmToAdmin'])->middleware('validate_upload')->name('reports.confirm_to_admin');
         Route::post('/reports/{id}/assign', [App\Http\Controllers\AdministrationDashboardController::class, 'assignReport'])->name('reports.assign');
         Route::post('/complaints/{id}/assign', [App\Http\Controllers\AdministrationDashboardController::class, 'assignComplaint'])->name('complaints.assign');
         Route::post('/complaints/{id}/resolve', [App\Http\Controllers\AdministrationDashboardController::class, 'resolveComplaint'])->name('complaints.resolve');
@@ -197,7 +197,7 @@ Route::middleware(['auth'])->group(function () {
 
     // Staff workflow route
     Route::middleware(['staff'])->group(function () {
-        Route::post('/workflow/reports/{id}/staff-confirm-admin', [App\Http\Controllers\WorkflowManagementController::class, 'staffConfirmToAdmin'])->name('workflow.reports.staff_confirm_admin');
+        Route::post('/workflow/reports/{id}/staff-confirm-admin', [App\Http\Controllers\WorkflowManagementController::class, 'staffConfirmToAdmin'])->middleware('validate_upload')->name('workflow.reports.staff_confirm_admin');
     });
 
     // Administration (Department Head or Staff) workflow route

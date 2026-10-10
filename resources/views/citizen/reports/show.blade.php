@@ -175,7 +175,7 @@
                         <!-- Selesai -> closed -->
                         <form action="{{ route('workflow.reports.citizen_close', $report->id) }}" method="POST" class="d-inline">
                             @csrf
-                            <button type="submit" class="btn btn-success fw-bold" onclick="return confirm('Apakah Anda yakin laporan ini telah selesai dan dapat diarsipkan?')">
+                            <button type="submit" class="btn btn-success fw-bold" data-confirm="Pastikan masalah sudah benar-benar terselesaikan. Setelah dikonfirmasi, laporan ini akan ditutup dan masuk ke arsip." data-confirm-title="Arsipkan laporan ini?" data-confirm-label="Ya, arsipkan">
                                 <i class="fas fa-check-circle me-1"></i> Ya, Masalah Selesai (Arsipkan)
                             </button>
                         </form>
@@ -569,4 +569,3 @@
 }
 </style>
 @endsection
-

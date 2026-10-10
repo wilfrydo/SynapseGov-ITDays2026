@@ -22,9 +22,8 @@
                                 $targetStaffs = (isset($staffList) && $staffList->isNotEmpty())
                                     ? $staffList->where('department_id', $report->department_id)
                                     : \App\Models\User::where('role', 'staff')->where('department_id', $report->department_id)->get();
-                                if ($targetStaffs->isEmpty()) {
-                                    $targetStaffs = \App\Models\User::where('role', 'staff')->get();
-                                }
+                                $targetStaffs = $targetStaffs->where('role', 'staff')->where('is_active', true)
+                                    ->filter(fn ($staff) => $report->department_id && (int) $staff->department_id === (int) $report->department_id);
                             @endphp
                             @foreach($targetStaffs as $staff)
                                 <option value="{{ $staff->id }}" {{ (int) $previousStaffId === (int) $staff->id ? 'selected' : '' }}>
@@ -40,7 +39,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                    <button type="submit" class="btn btn-danger">Reject & Kembalikan</button>
+                    <button type="submit" class="btn btn-danger" @disabled($targetStaffs->isEmpty())>Reject & Kembalikan</button>
                 </div>
             </form>
         </div>

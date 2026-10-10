@@ -9,6 +9,8 @@ use App\Models\User;
 use App\Support\Attachments;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class AdminDashboardController extends Controller
 {
@@ -22,7 +24,7 @@ class AdminDashboardController extends Controller
         $repStat = Report::selectRaw("
             COUNT(*) as total_reports,
             COALESCE(SUM(CASE WHEN status IN ('submitted', 'pending') THEN 1 ELSE 0 END), 0) as pending_reports,
-            COALESCE(SUM(CASE WHEN status = 'resolved' THEN 1 ELSE 0 END), 0) as resolved_reports,
+            COALESCE(SUM(CASE WHEN status IN ('resolved', 'closed') THEN 1 ELSE 0 END), 0) as resolved_reports,
             COALESCE(SUM(CASE WHEN status IN ('in_progress', 'assigned', 'verified') THEN 1 ELSE 0 END), 0) as in_progress_reports,
             COALESCE(SUM(CASE WHEN DATE(created_at) = ? THEN 1 ELSE 0 END), 0) as today_reports,
             COALESCE(SUM(CASE WHEN assigned_to IS NULL AND status IN ('submitted', 'pending') THEN 1 ELSE 0 END), 0) as pending_assignments,
@@ -193,9 +195,9 @@ class AdminDashboardController extends Controller
         $stats = [
             'total_reports' => Report::count(),
             'total_complaints' => Complaint::count(),
-            'pending_reports' => Report::where('status', 'pending')->count(),
+            'pending_reports' => Report::whereIn('status', ['submitted', 'pending'])->count(),
             'in_progress_reports' => Report::where('status', 'in_progress')->count(),
-            'resolved_reports' => Report::where('status', 'resolved')->count(),
+            'resolved_reports' => Report::whereIn('status', ['resolved', 'closed'])->count(),
             'escalated_reports' => Report::where('is_escalated', true)->count(),
             'total_users' => User::count(),
             'active_users' => User::where('is_active', true)->count(),
@@ -439,7 +441,7 @@ class AdminDashboardController extends Controller
             return back()->with('error', 'Laporan belum memiliki departemen.');
         }
 
-        $head = User::where('role', 'department_head')->where('department_id', $report->department_id)->first();
+        $head = User::where('role', 'department_head')->where('department_id', $report->department_id)->where('is_active', true)->first();
         if (! $head) {
             return back()->with('error', 'Tidak ditemukan kepala departemen untuk laporan ini.');
         }
@@ -454,6 +456,9 @@ class AdminDashboardController extends Controller
     public function confirmComplaint($id)
     {
         $complaint = Complaint::findOrFail($id);
+        if (! in_array($complaint->status, ['submitted', 'pending'], true)) {
+            return back()->with('error', 'Keluhan dengan status ini tidak dapat dikonfirmasi.');
+        }
         $oldStatus = $complaint->status;
         $complaint->update([
             'status' => 'pending',
@@ -467,42 +472,49 @@ class AdminDashboardController extends Controller
 
     public function assignComplaint(Request $request, $id)
     {
+        $complaint = Complaint::findOrFail($id);
         $request->validate([
-            'assigned_to' => 'required|exists:users,id',
+            'assigned_to' => ['required', Rule::exists('users', 'id')->where('role', 'staff')
+                ->where('is_active', true)->where('department_id', $complaint->department_id)],
             'notes' => 'nullable|string|max:1000',
         ]);
 
-        $complaint = Complaint::findOrFail($id);
-        $assignedTo = User::where('id', $request->assigned_to)->where('is_active', true)->firstOrFail();
+        return DB::transaction(function () use ($request, $id) {
+            $complaint = Complaint::lockForUpdate()->findOrFail($id);
+            if (! in_array('investigating', $complaint->allowedStatuses(), true)) {
+                return back()->with('error', 'Keluhan dengan status ini tidak dapat ditugaskan.');
+            }
+            $assignedTo = User::where('id', $request->assigned_to)->where('is_active', true)->firstOrFail();
 
-        \App\Models\Assignment::where('assignable_type', Complaint::class)
-            ->where('assignable_id', $complaint->id)
-            ->where('status', 'active')
-            ->update([
-                'status' => 'reassigned',
-                'completed_at' => now(),
+            \App\Models\Assignment::where('assignable_type', Complaint::class)
+                ->where('assignable_id', $complaint->id)
+                ->where('status', 'active')
+                ->update([
+                    'status' => 'reassigned',
+                    'completed_at' => now(),
+                ]);
+
+            \App\Models\Assignment::create([
+                'assignable_id' => $complaint->id,
+                'assignable_type' => Complaint::class,
+                'assigned_to' => $assignedTo->id,
+                'assigned_by' => Auth::id(),
+                'notes' => $request->notes,
+                'assigned_at' => now(),
+                'status' => 'active',
             ]);
 
-        \App\Models\Assignment::create([
-            'assignable_id' => $complaint->id,
-            'assignable_type' => Complaint::class,
-            'assigned_to' => $assignedTo->id,
-            'assigned_by' => Auth::id(),
-            'notes' => $request->notes,
-            'assigned_at' => now(),
-            'status' => 'active',
-        ]);
+            $oldAssigned = $complaint->assigned_to;
+            $complaint->update([
+                'assigned_to' => $assignedTo->id,
+                'status' => 'investigating',
+                'last_activity_at' => now(),
+            ]);
 
-        $oldAssigned = $complaint->assigned_to;
-        $complaint->update([
-            'assigned_to' => $assignedTo->id,
-            'status' => 'investigating',
-            'last_activity_at' => now(),
-        ]);
+            \App\Models\AuditLog::record($complaint, 'complaint_assigned', ['assigned_to' => $oldAssigned], ['assigned_to' => $assignedTo->id, 'status' => 'investigating']);
 
-        \App\Models\AuditLog::record($complaint, 'complaint_assigned', ['assigned_to' => $oldAssigned], ['assigned_to' => $assignedTo->id, 'status' => 'investigating']);
-
-        return redirect()->back()->with('success', 'Keluhan berhasil ditugaskan ke '.$assignedTo->name.'.');
+            return redirect()->back()->with('success', 'Keluhan berhasil ditugaskan ke '.$assignedTo->name.'.');
+        });
     }
 
     public function editComplaint($id)

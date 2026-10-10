@@ -42,7 +42,7 @@ class DepartmentHeadWorkspaceController extends Controller
         $metrics = [
             'total' => $counts->sum(),
             'assign' => (int) $counts->get('verified', 0),
-            'active' => collect(['assigned', 'in_progress', 'reviewed', 'needs_revision', 'awaiting_info'])->sum(fn ($status) => (int) $counts->get($status, 0)),
+            'active' => collect(['assigned', 'in_progress', 'reviewed', 'needs_revision', 'awaiting_info', 'awaiting_admin_approval'])->sum(fn ($status) => (int) $counts->get($status, 0)),
             'done' => (int) $counts->get('resolved', 0) + (int) $counts->get('closed', 0),
             'overdue' => (clone $reports)->whereNotIn('status', ['resolved', 'closed', 'rejected'])->where('sla_due_at', '<', now())->count(),
         ];

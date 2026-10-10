@@ -34,12 +34,12 @@ class ReportPolicy
         }
 
         // Department head can view reports in their department or assigned to them
-        if ($user->role === 'department_head' && ((int) $report->department_id === (int) $user->department_id || (int) $report->assigned_to === (int) $user->id)) {
+        if ($user->role === 'department_head' && (($user->department_id && (int) $report->department_id === (int) $user->department_id) || (int) $report->assigned_to === (int) $user->id)) {
             return true;
         }
 
         // Staff can view reports in their department or assigned to them
-        if ($user->role === 'staff' && ((int) $report->department_id === (int) $user->department_id || (int) $report->assigned_to === (int) $user->id)) {
+        if ($user->role === 'staff' && (($user->department_id && (int) $report->department_id === (int) $user->department_id) || (int) $report->assigned_to === (int) $user->id)) {
             return true;
         }
 
